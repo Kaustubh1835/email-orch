@@ -9,8 +9,11 @@ from app.api.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup — create tables if they don't exist
+    from app.database import init_db
     print("Starting Email Orchestrator AI API...")
+    init_db()
+    print("Database tables verified.")
     yield
     # Shutdown
     print("Shutting down Email Orchestrator AI API...")

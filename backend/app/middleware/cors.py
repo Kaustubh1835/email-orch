@@ -4,7 +4,11 @@ from app.config import get_settings
 
 def add_cors_middleware(app):
     settings = get_settings()
-    origins = [settings.FRONTEND_URL]
+    origins = [
+        o.strip()
+        for o in settings.FRONTEND_URL.split(",")
+        if o.strip()
+    ]
 
     app.add_middleware(
         CORSMiddleware,

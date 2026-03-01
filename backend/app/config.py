@@ -1,4 +1,5 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
@@ -32,6 +33,14 @@ class Settings(BaseSettings):
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def fix_postgres_url(cls, v: str) -> str:
+        # Render provides postgres:// but SQLAlchemy needs postgresql://
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql://", 1)
+        return v
 
     class Config:
         env_file = ".env"
