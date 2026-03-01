@@ -6,10 +6,12 @@ from alembic import context
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from app.config import get_settings
 from app.database import Base
-from app.models import User, Email, FollowUp, OAuthToken  # noqa: F401
+from app.models import User, Email, FollowUp  # noqa: F401
 
 config = context.config
+config.set_main_option("sqlalchemy.url", get_settings().DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
