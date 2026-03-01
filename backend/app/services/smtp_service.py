@@ -8,35 +8,35 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 
-def _send_via_resend(sender: str, receiver: str, subject: str, body: str, settings) -> str:
-    """Send email using Resend HTTP API."""
+def _send_via_brevo(sender: str, receiver: str, subject: str, body: str, settings) -> str:
+    """Send email using Brevo (Sendinblue) HTTP API."""
     message_id = make_msgid()
-    logger.info("Sending email via Resend from %s to %s", sender, receiver)
+    logger.info("Sending email via Brevo from %s to %s", sender, receiver)
 
     response = httpx.post(
-        "https://api.resend.com/emails",
+        "https://api.brevo.com/v3/smtp/email",
         headers={
-            "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+            "api-key": settings.BREVO_API_KEY,
             "Content-Type": "application/json",
         },
         json={
-            "from": f"{sender} <onboarding@resend.dev>",
-            "to": [receiver],
+            "sender": {"name": sender, "email": settings.SMTP_USERNAME},
+            "to": [{"email": receiver}],
             "subject": subject,
-            "text": body,
-            "reply_to": sender,
+            "textContent": body,
+            "replyTo": {"email": settings.SMTP_USERNAME, "name": sender},
         },
         timeout=30,
     )
 
     if response.status_code not in (200, 201):
         error_detail = response.text
-        logger.error("Resend API error (%s): %s", response.status_code, error_detail)
-        raise ValueError(f"Failed to send email via Resend: {error_detail}")
+        logger.error("Brevo API error (%s): %s", response.status_code, error_detail)
+        raise ValueError(f"Failed to send email via Brevo: {error_detail}")
 
     data = response.json()
-    resend_id = data.get("id", "")
-    logger.info("Email sent via Resend, id=%s, message_id=%s", resend_id, message_id)
+    brevo_id = data.get("messageId", "")
+    logger.info("Email sent via Brevo, id=%s, message_id=%s", brevo_id, message_id)
     return message_id
 
 
@@ -83,10 +83,10 @@ def _send_via_smtp(sender: str, receiver: str, subject: str, body: str, settings
 
 
 def send_email(sender: str, receiver: str, subject: str, body: str) -> str:
-    """Send an email. Uses Resend API if configured, otherwise falls back to SMTP."""
+    """Send an email. Uses Brevo API if configured, otherwise falls back to SMTP."""
     settings = get_settings()
 
-    if settings.RESEND_API_KEY:
-        return _send_via_resend(sender, receiver, subject, body, settings)
+    if settings.BREVO_API_KEY:
+        return _send_via_brevo(sender, receiver, subject, body, settings)
     else:
         return _send_via_smtp(sender, receiver, subject, body, settings)

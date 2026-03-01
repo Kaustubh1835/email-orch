@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
 
-    # Resend (HTTP email API — used in production when SMTP is blocked)
-    RESEND_API_KEY: str = ""
+    # Brevo (HTTP email API — used in production when SMTP is blocked)
+    BREVO_API_KEY: str = ""
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
