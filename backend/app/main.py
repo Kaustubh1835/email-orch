@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -6,17 +7,29 @@ from app.middleware.cors import add_cors_middleware
 from app.middleware.error_handler import generic_exception_handler, validation_exception_handler
 from app.api.router import api_router
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup — create tables if they don't exist
+    from app.config import get_settings
     from app.database import init_db
-    print("Starting Email Orchestrator AI API...")
-    init_db()
-    print("Database tables verified.")
+
+    settings = get_settings()
+    db_host = settings.DATABASE_URL.split("@")[-1].split("/")[0] if "@" in settings.DATABASE_URL else "unknown"
+    logger.info("Starting Email Orchestrator AI API...")
+    logger.info("Database host: %s", db_host)
+    logger.info("FRONTEND_URL: %s", settings.FRONTEND_URL)
+
+    try:
+        init_db()
+        logger.info("Database tables verified.")
+    except Exception as e:
+        logger.error("Failed to initialize database: %s", e)
+
     yield
-    # Shutdown
-    print("Shutting down Email Orchestrator AI API...")
+    logger.info("Shutting down Email Orchestrator AI API...")
 
 
 app = FastAPI(
