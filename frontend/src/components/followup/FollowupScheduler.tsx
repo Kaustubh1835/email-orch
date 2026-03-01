@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Clock, X, CalendarPlus, Loader2, AlertCircle } from "lucide-react";
+import { Clock, X, CalendarPlus, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import Button from "@/components/ui/Button";
 import {
