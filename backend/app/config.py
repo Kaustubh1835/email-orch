@@ -21,14 +21,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 1440
 
-    # SMTP (fallback for local dev)
+    # SMTP
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-
-    # Resend (for production — HTTP-based email sending)
-    RESEND_API_KEY: str = ""
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
