@@ -1,5 +1,6 @@
 import logging
 import smtplib
+import httpx
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
 from app.config import get_settings
@@ -8,11 +9,49 @@ logger = logging.getLogger(__name__)
 
 
 def send_email(sender: str, receiver: str, subject: str, body: str) -> str:
-    """Send an email via SMTP. Returns a generated Message-ID."""
+    """Send an email. Uses Resend API if configured, otherwise falls back to SMTP."""
     settings = get_settings()
 
+    if settings.RESEND_API_KEY:
+        return _send_via_resend(sender, receiver, subject, body, settings)
+    else:
+        return _send_via_smtp(sender, receiver, subject, body, settings)
+
+
+def _send_via_resend(sender: str, receiver: str, subject: str, body: str, settings) -> str:
+    """Send email via Resend HTTP API (works on cloud platforms that block SMTP)."""
+    logger.info("Sending email via Resend from %s to %s", sender, receiver)
+
+    response = httpx.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": sender,
+            "to": [receiver],
+            "subject": subject,
+            "text": body,
+        },
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        error_detail = response.text
+        logger.error("Resend API error (%s): %s", response.status_code, error_detail)
+        raise ValueError(f"Resend API error: {error_detail}")
+
+    data = response.json()
+    message_id = data.get("id", "")
+    logger.info("Email sent via Resend, id=%s", message_id)
+    return message_id
+
+
+def _send_via_smtp(sender: str, receiver: str, subject: str, body: str, settings) -> str:
+    """Send email via SMTP (for local development)."""
     if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
-        raise ValueError("SMTP credentials not configured")
+        raise ValueError("No email provider configured. Set RESEND_API_KEY or SMTP credentials.")
 
     msg = MIMEText(body)
     msg["From"] = f"{sender} <{settings.SMTP_USERNAME}>"
@@ -25,11 +64,10 @@ def send_email(sender: str, receiver: str, subject: str, body: str) -> str:
     msg["Message-ID"] = message_id
 
     port = settings.SMTP_PORT
-    logger.info("Sending email from %s to %s via %s:%s",
+    logger.info("Sending email via SMTP from %s to %s via %s:%s",
                 sender, receiver, settings.SMTP_HOST, port)
 
     try:
-        # Port 465 uses SSL directly; port 587 uses STARTTLS
         if port == 465:
             with smtplib.SMTP_SSL(settings.SMTP_HOST, port, timeout=30) as server:
                 server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
@@ -48,5 +86,5 @@ def send_email(sender: str, receiver: str, subject: str, body: str) -> str:
         logger.error("SMTP error: %s", e)
         raise ValueError(f"Failed to send email: {e}") from e
 
-    logger.info("Email sent successfully, message_id=%s", message_id)
+    logger.info("Email sent via SMTP, message_id=%s", message_id)
     return message_id
