@@ -16,7 +16,7 @@ import type { BillingStatusResponse } from "@/lib/api/types";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
-  const { user, updateUser } = useAuthStore();
+  const { updateUser } = useAuthStore();
   const [billing, setBilling] = useState<BillingStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
