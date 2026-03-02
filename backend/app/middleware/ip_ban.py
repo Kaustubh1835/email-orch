@@ -1,9 +1,7 @@
+import json
 import time
 import logging
 from collections import defaultdict
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -17,22 +15,32 @@ _request_counts: dict[str, list[float]] = defaultdict(list)
 _banned_ips: dict[str, float] = {}
 
 
-def _get_client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
+def _get_client_ip(scope: dict) -> str:
+    headers = dict(scope.get("headers", []))
+    forwarded = headers.get(b"x-forwarded-for", b"").decode()
     if forwarded:
         return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    client = scope.get("client")
+    return client[0] if client else "unknown"
 
 
 def _cleanup_old_entries(ip: str, now: float) -> None:
-    """Remove timestamps older than the window."""
     cutoff = now - WINDOW_SECONDS
     _request_counts[ip] = [t for t in _request_counts[ip] if t > cutoff]
 
 
-class IPBanMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        ip = _get_client_ip(request)
+class IPBanMiddleware:
+    """Pure ASGI middleware — does not buffer responses, so SSE streaming works."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        ip = _get_client_ip(scope)
         now = time.time()
 
         # Check if IP is banned
@@ -40,12 +48,13 @@ class IPBanMiddleware(BaseHTTPMiddleware):
             if now < _banned_ips[ip]:
                 remaining = int(_banned_ips[ip] - now)
                 logger.warning("Blocked request from banned IP: %s (%ds remaining)", ip, remaining)
-                return JSONResponse(
-                    status_code=403,
-                    content={"detail": f"IP temporarily blocked. Try again in {remaining} seconds."},
-                )
+                body = json.dumps({"detail": f"IP temporarily blocked. Try again in {remaining} seconds."})
+                await send({"type": "http.response.start", "status": 403, "headers": [
+                    [b"content-type", b"application/json"],
+                ]})
+                await send({"type": "http.response.body", "body": body.encode()})
+                return
             else:
-                # Ban expired
                 del _banned_ips[ip]
                 _request_counts.pop(ip, None)
 
@@ -58,10 +67,11 @@ class IPBanMiddleware(BaseHTTPMiddleware):
             _banned_ips[ip] = now + BAN_DURATION_SECONDS
             logger.warning("Banning IP %s for %ds (%d requests in %ds)",
                            ip, BAN_DURATION_SECONDS, len(_request_counts[ip]), WINDOW_SECONDS)
-            return JSONResponse(
-                status_code=403,
-                content={"detail": f"Too many requests. IP blocked for {BAN_DURATION_SECONDS // 60} minutes."},
-            )
+            body = json.dumps({"detail": f"Too many requests. IP blocked for {BAN_DURATION_SECONDS // 60} minutes."})
+            await send({"type": "http.response.start", "status": 403, "headers": [
+                [b"content-type", b"application/json"],
+            ]})
+            await send({"type": "http.response.body", "body": body.encode()})
+            return
 
-        response = await call_next(request)
-        return response
+        await self.app(scope, receive, send)
