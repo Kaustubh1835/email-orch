@@ -8,6 +8,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import EmailForm from "@/components/compose/EmailForm";
 import EmailPreview from "@/components/compose/EmailPreview";
 import ActionButtons from "@/components/compose/ActionButtons";
+import UpgradeModal from "@/components/billing/UpgradeModal";
 import { useEmailGeneration } from "@/lib/hooks/useEmailGeneration";
 
 export default function ComposePage() {
@@ -22,6 +23,8 @@ export default function ComposePage() {
     tone,
     steps,
     showStepper,
+    showUpgradeModal,
+    setShowUpgradeModal,
     generate,
     send,
     review,
@@ -160,6 +163,10 @@ export default function ComposePage() {
         </div>
       </PageTransition>
       <Footer />
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </main>
   );
 }

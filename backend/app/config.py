@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # Brevo (HTTP email API — used in production when SMTP is blocked)
     BREVO_API_KEY: str = ""
 
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_ID: str = ""
+
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
 

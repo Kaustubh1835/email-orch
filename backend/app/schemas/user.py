@@ -24,6 +24,10 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     created_at: datetime
+    emails_generated: int = 0
+    emails_sent: int = 0
+    plan: str = "free"
+    plan_expires_at: datetime | None = None
 
     class Config:
         from_attributes = True

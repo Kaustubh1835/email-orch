@@ -30,6 +30,10 @@ export default function LoginPage() {
       authLogin(result.access_token, {
         id: result.user.id,
         email: result.user.email,
+        emails_generated: result.user.emails_generated ?? 0,
+        emails_sent: result.user.emails_sent ?? 0,
+        plan: result.user.plan ?? "free",
+        plan_expires_at: result.user.plan_expires_at ?? null,
       });
       router.push("/compose");
     } catch (err: unknown) {

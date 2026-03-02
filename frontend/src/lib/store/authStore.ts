@@ -3,6 +3,10 @@ import { create } from "zustand";
 interface User {
   id: string;
   email: string;
+  emails_generated: number;
+  emails_sent: number;
+  plan: "free" | "basic";
+  plan_expires_at: string | null;
 }
 
 interface AuthState {
@@ -12,9 +16,10 @@ interface AuthState {
   login: (token: string, user: User) => void;
   logout: () => void;
   hydrate: () => void;
+  updateUser: (partial: Partial<User>) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
@@ -43,5 +48,13 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ token: null, user: null, isAuthenticated: false });
       }
     }
+  },
+
+  updateUser: (partial) => {
+    const current = get().user;
+    if (!current) return;
+    const updated = { ...current, ...partial };
+    localStorage.setItem("user", JSON.stringify(updated));
+    set({ user: updated });
   },
 }));

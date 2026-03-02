@@ -28,6 +28,7 @@ export function useEmailGeneration() {
   const [sent, setSent] = useState(false);
   const [steps, setSteps] = useState<StepState[]>(buildInitialSteps());
   const [showStepper, setShowStepper] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { currentEmailId, generatedEmail, intent, tone, setGenerated, clear } =
     useEmailStore();
 
@@ -95,8 +96,14 @@ export function useEmailGeneration() {
 
       // Brief pause to show all-green stepper before transitioning to preview
       await new Promise((resolve) => setTimeout(resolve, 800));
-    } catch {
-      setError("Failed to generate email. Please try again.");
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 403) {
+        setShowUpgradeModal(true);
+        setShowStepper(false);
+      } else {
+        setError("Failed to generate email. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -123,10 +130,13 @@ export function useEmailGeneration() {
         )
       );
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Failed to send email. Please try again.";
-      setError(msg);
+      const response = (err as { response?: { status?: number; data?: { detail?: string } } })?.response;
+      if (response?.status === 403) {
+        setShowUpgradeModal(true);
+      } else {
+        const msg = response?.data?.detail || "Failed to send email. Please try again.";
+        setError(msg);
+      }
       setSteps((prev) =>
         prev.map((s) =>
           s.id === "send_email" ? { ...s, status: "pending" as const } : s
@@ -160,6 +170,8 @@ export function useEmailGeneration() {
     tone,
     steps,
     showStepper,
+    showUpgradeModal,
+    setShowUpgradeModal,
     generate,
     send,
     review,

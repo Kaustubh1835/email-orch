@@ -63,6 +63,27 @@ export interface UserResponse {
   id: string;
   email: string;
   created_at: string;
+  emails_generated: number;
+  emails_sent: number;
+  plan: "free" | "basic";
+  plan_expires_at: string | null;
+}
+
+export interface CheckoutSessionResponse {
+  checkout_url: string;
+}
+
+export interface BillingStatusResponse {
+  plan: string;
+  emails_generated: number;
+  emails_sent: number;
+  free_generation_limit: number;
+  free_send_limit: number;
+  plan_expires_at: string | null;
+}
+
+export interface PortalSessionResponse {
+  portal_url: string;
 }
 
 export interface AuthTokenResponse {

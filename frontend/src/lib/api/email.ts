@@ -117,6 +117,11 @@ export async function generateEmailStream(
       localStorage.removeItem("user");
       window.location.href = "/login";
     }
+    if (response.status === 403) {
+      const err = new Error("upgrade_required") as Error & { status: number };
+      err.status = 403;
+      throw err;
+    }
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 

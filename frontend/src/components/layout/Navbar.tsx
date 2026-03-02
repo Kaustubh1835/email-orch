@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/compose", label: "Compose" },
   { href: "/history", label: "History" },
+  { href: "/billing", label: "Billing" },
 ];
 
 export default function Navbar() {

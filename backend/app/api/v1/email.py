@@ -15,6 +15,7 @@ from app.schemas.email import (
     EmailSummary,
 )
 from app.utils.auth import get_current_user
+from app.utils.billing import require_generate_quota, require_send_quota
 from app.utils.rate_limit import limiter
 from app.services.graph_service import generate_email as generate_email_service
 from app.services.graph_service import generate_email_stream as stream_service
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/emails", tags=["Emails"])
 def generate_email(
     data: GenerateEmailRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_generate_quota),
 ):
     result = generate_email_service(
         sender=data.sender,
@@ -51,6 +52,9 @@ def generate_email(
     db.commit()
     db.refresh(email)
 
+    user.emails_generated += 1
+    db.commit()
+
     return GenerateEmailResponse(
         email_id=email.id,
         formatted_email=email.body,
@@ -63,7 +67,7 @@ def generate_email(
 @router.post("/generate-stream")
 def generate_email_stream(
     data: GenerateEmailRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_generate_quota),
 ):
     def event_generator():
         try:
@@ -100,6 +104,11 @@ def generate_email_stream(
                     db.commit()
                     db.refresh(email)
 
+                    db_user = db.query(User).filter(User.id == user.id).first()
+                    if db_user:
+                        db_user.emails_generated += 1
+                        db.commit()
+
                     result = {
                         "event": "complete",
                         "email_id": str(email.id),
@@ -132,7 +141,7 @@ def send_email(
     request: Request,
     data: SendEmailRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_send_quota),
 ):
     email = db.query(Email).filter(Email.id == data.email_id, Email.user_id == user.id).first()
     if not email:
@@ -152,6 +161,7 @@ def send_email(
         email.status = "sent"
         email.gmail_message_id = message_id
         email.sent_at = datetime.now(timezone.utc)
+        user.emails_sent += 1
         db.commit()
         db.refresh(email)
 
