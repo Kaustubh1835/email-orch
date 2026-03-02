@@ -1,10 +1,11 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, Token, UserResponse
 from app.utils.auth import hash_password, verify_password, create_access_token
+from app.utils.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register(data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, data: UserCreate, db: Session = Depends(get_db)):
     try:
         existing = db.query(User).filter(User.email == data.email).first()
         if existing:
@@ -33,7 +35,8 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     try:
         user = db.query(User).filter(User.email == data.email).first()
         if not user or not verify_password(data.password, user.hashed_password):

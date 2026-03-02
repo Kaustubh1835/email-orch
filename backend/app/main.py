@@ -3,9 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.middleware.cors import add_cors_middleware
 from app.middleware.error_handler import generic_exception_handler, validation_exception_handler
 from app.api.router import api_router
+from app.utils.rate_limit import limiter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,8 +44,10 @@ app = FastAPI(
 
 # Middleware
 add_cors_middleware(app)
+app.state.limiter = limiter
 
 # Exception handlers
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
