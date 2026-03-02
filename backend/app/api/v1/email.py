@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db, get_session_local
@@ -15,6 +15,7 @@ from app.schemas.email import (
     EmailSummary,
 )
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import limiter
 from app.services.graph_service import generate_email as generate_email_service
 from app.services.graph_service import generate_email_stream as stream_service
 from app.services.smtp_service import send_email as smtp_send
@@ -126,7 +127,9 @@ def generate_email_stream(
 
 
 @router.post("/send", response_model=SendEmailResponse)
+@limiter.limit("10/minute")
 def send_email(
+    request: Request,
     data: SendEmailRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
