@@ -1,11 +1,12 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Mail } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PageTransition from "@/components/layout/PageTransition";
 import Button from "@/components/ui/Button";
 import EmailTable from "@/components/history/EmailTable";
+import EmptyState from "@/components/ui/EmptyState";
 import { useEmailHistory } from "@/lib/hooks/useEmailHistory";
 
 export default function HistoryPage() {
@@ -31,7 +32,19 @@ export default function HistoryPage() {
             </Button>
           </div>
 
-          {error && (
+          {!loading && emails.length === 0 && !error && (
+            <EmptyState
+              icon={Mail}
+              title="No emails yet"
+              description="Start composing your first AI-generated email. Use the compose tool to create professional emails in seconds."
+              cta={{
+                label: "Start Composing",
+                href: "/compose",
+              }}
+            />
+          )}
+
+          {error && emails.length === 0 && (
             <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
             </div>

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CreditCard, Zap, Crown, ExternalLink, Loader2 } from "lucide-react";
+import { CreditCard, Zap, Crown, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import PageTransition from "@/components/layout/PageTransition";
@@ -180,8 +180,29 @@ function BillingContent() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-20 text-zinc-500">
-            Failed to load billing information. Please try again.
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-8">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-lg bg-cyan-600/10 border border-cyan-600/20 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-zinc-100 mb-2">
+                  Welcome to Email Orchestrator
+                </h2>
+                <p className="text-zinc-400">
+                  You&apos;re currently on the Free plan. Generate up to 1 email and send 1 email per month. Upgrade to Basic for unlimited access at just $3/month.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleUpgrade}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 transition-all disabled:opacity-50"
+            >
+              <Zap className="w-4 h-4" />
+              {actionLoading ? "Redirecting..." : "Upgrade to Basic — $3/mo"}
+            </button>
           </div>
         )}
       </div>
