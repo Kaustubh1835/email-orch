@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Menu, X, LogOut } from "lucide-react";
+import { MessageSquare, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuthStore } from "@/lib/store/authStore";
 
@@ -26,7 +26,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <Mail className="w-6 h-6 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+            <MessageSquare className="w-6 h-6 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
             <span className="font-display font-bold text-lg text-cyan-400">
               Email Orchestrator AI
             </span>
